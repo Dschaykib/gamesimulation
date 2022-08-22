@@ -36,8 +36,8 @@ init_game(players,
           meeples_per_player)
 turn <- 0
 game_runs <- TRUE
-set.seed(1234)
-plot <- TRUE
+#set.seed(1234)
+plot <- FALSE
 start_time <- Sys.time()
 while (game_runs) {
   # logs
@@ -88,7 +88,9 @@ cat(c("Game ended with '", this_winner, "' winning after ", turn, " turns (took 
 # TODO: test strategies
 
 if (FALSE) {
-  for (i_game in 1:10) {
-    source(file = "game.R")
+  for (i_game in 1:100) {
+    #Sys.sleep(1)
+    cat("Game:", i_game, "\n")
+    source(file = "R/game.R")
   }
 }

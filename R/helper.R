@@ -29,14 +29,14 @@ init_game <- function(players, max_players, players_names, fields_per_players,
   
   # log files
   this_time <- gsub(" ", "_", gsub(":", "-", Sys.time()))
-  log_roll_file <- paste0("logs/log_rols_", this_time, ".csv")
+  log_roll_file <- paste0("logs/log_rolls_", this_time, ".csv")
   checkdir(dirname(log_roll_file))
-  data.table::fwrite(x = list("turn;try;this_roll;currentplayer"),
+  data.table::fwrite(x = list("game;turn;try;this_roll;currentplayer"),
                      file = log_roll_file, append = FALSE, row.names = FALSE)
   
   log_kick_file <- paste0("logs/log_kick_", this_time, ".csv")
   checkdir(dirname(log_kick_file))
-  data.table::fwrite(x = list("turn;try;field;kicked;from"),
+  data.table::fwrite(x = list("game;turn;try;field;kicked;from"),
                      file = log_kick_file, append = FALSE, row.names = FALSE)
   
   # bring to global
@@ -69,7 +69,8 @@ play_turn <- function(field, currentplayer, try = 1) {
   # dice roll
   reroll <- FALSE
   this_roll <- sample(1:max_dice, size = 1)
-  data.table::fwrite(x = list(turn, try, this_roll, currentplayer),
+  data.table::fwrite(x = list(game = log_roll_file,
+                              turn, try, this_roll, currentplayer),
                      file = log_roll_file,
                      sep = ";",
                      append = TRUE,
@@ -109,7 +110,8 @@ play_turn <- function(field, currentplayer, try = 1) {
         start_area <<- start_area
         # logs
         data.table::fwrite(
-          x = list(turn,try,start_field,field[start_field],next_meeple),
+          x = list(game = log_kick_file,
+                   turn, try, start_field, field[start_field], next_meeple),
           file = log_kick_file,
           sep = ";",
           append = TRUE,
@@ -336,7 +338,8 @@ move_meeple <- function(index, roll, field, currentplayer) {
         
         # logs
         data.table::fwrite(
-          x = list(turn,0,target,prev_meeple,field[target]),
+          x = list(game = log_kick_file,
+                   turn, 0, target, prev_meeple, field[target]),
           file = log_kick_file,
           sep = ";",
           append = TRUE,
