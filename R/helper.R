@@ -1,31 +1,3 @@
-rm(list = ls())
-
-library(helfRlein)
-library(data.table)
-
-# settings
-
-players <- 4 # max 4 at the moment
-max_players <- 4
-fields_per_players <- 10
-# names must be unique
-# TODO change colors to automate
-players_names <- c("red", "blue", "yellow", "black")
-meeples_per_player <- 4
-
-# rule settings
-max_dice <- 6
-max_num_try <- 3
-
-move_order <- list(
-  "blocked" = 0,
-  "free_on_field" = 1,
-  "free_in_home" = 2,
-  "kick" = 3,
-  "free_start" = 4
-)
-
-
 
 # functions ---------------------------------------------------------------
 checkdir <- function(path) {
@@ -40,35 +12,33 @@ init_game <- function(players, max_players, players_names, fields_per_players,
                               nchar(meeples_per_player)), collapse = "")
   field_size <- max_players * fields_per_players
   field <- rep(NA_character_, field_size)
-
+  
   inital_mat <- matrix(c(players_names,
                          rep("", max_players * (fields_per_players - 1))),
                        ncol = max_players,
                        byrow = TRUE)
   inital_mat[nrow(inital_mat),] <- paste0(players_names, "_home")[c(2:max_players, 1)]
   names(field) <- c(inital_mat)
-
+  
   # create start and end
   start_area <- rep(list(rep(seq_len(meeples_per_player))), players)
   names(start_area) <- players_names[seq_len(players)]
-
+  
   end_area <- rep(list(rep(NA_character_, meeples_per_player)), players)
   names(end_area) <- players_names[seq_len(players)]
-
+  
   # log files
   this_time <- gsub(" ", "_", gsub(":", "-", Sys.time()))
   log_roll_file <- paste0("logs/log_rols_", this_time, ".csv")
-  #helfRlein::checkdir(dirname(log_roll_file))
   checkdir(dirname(log_roll_file))
   data.table::fwrite(x = list("turn;try;this_roll;currentplayer"),
                      file = log_roll_file, append = FALSE, row.names = FALSE)
-
+  
   log_kick_file <- paste0("logs/log_kick_", this_time, ".csv")
-  #helfRlein::checkdir(dirname(log_kick_file))
   checkdir(dirname(log_kick_file))
   data.table::fwrite(x = list("turn;try;field;kicked;from"),
                      file = log_kick_file, append = FALSE, row.names = FALSE)
-
+  
   # bring to global
   empty_field <<- empty_field
   field <<- field
@@ -76,7 +46,7 @@ init_game <- function(players, max_players, players_names, fields_per_players,
   end_area <<- end_area
   log_roll_file <<- log_roll_file
   log_kick_file <<- log_kick_file
-
+  
 }
 
 retry <- function(currentplayer, try) {
@@ -116,11 +86,11 @@ play_turn <- function(field, currentplayer, try = 1) {
     start_field <- which(names(field) == currentplayer)
     if ( any(start_area[[currentplayer]] != 0) ) {
       # are there any meepple in the house?
-
+      
       idx <- which(start_area[[currentplayer]] != 0)[1]
       next_meeple <- paste0(currentplayer, start_area[[currentplayer]][idx])
-
-
+      
+      
       if ( is.na(field[start_field]) ) {
         # home plate is free
         start_area[[currentplayer]][idx] <- 0
@@ -132,7 +102,7 @@ play_turn <- function(field, currentplayer, try = 1) {
                              roll = this_roll,
                              field = field,
                              currentplayer = currentplayer)
-
+        
       } else {
         # home plate is full with other meeple
         start_area[[currentplayer]][idx] <- 0
@@ -148,22 +118,22 @@ play_turn <- function(field, currentplayer, try = 1) {
         kick_meeple(field[start_field])
         # move kicker
         field[start_field] <- next_meeple
-
-
-
+        
+        
+        
       }
-
+      
     } else {
       # pick and move meeple
       field <- pick_and_move_meeple(field, currentplayer, roll = this_roll)
-
-
+      
+      
     }
-
+    
   } else {
     # pick and move meeple
     field <- pick_and_move_meeple(field, currentplayer, roll = this_roll)
-
+    
   }
   ## check for kick out
   ## move meeple depending on strategy
@@ -180,7 +150,7 @@ play_turn <- function(field, currentplayer, try = 1) {
                          currentplayer = currentplayer,
                          try = try + 1)
     }
-
+    
   }
   return(field)
 }
@@ -200,8 +170,8 @@ pick_meeple <- function(field,
                    field = field,
                    currentplayer = currentplayer)
   }
-
-
+  
+  
   possible_meeple_home <- grep(currentplayer, end_area[[currentplayer]])
   meeple_check_home <- vector(mode = "numeric", length = length(possible_meeple_home))
   for (i_meeple in seq_along(possible_meeple_home)) {
@@ -210,19 +180,19 @@ pick_meeple <- function(field,
                         roll = roll,
                         field = end_area[[currentplayer]],
                         currentplayer = currentplayer)
-
+    
   }
-
+  
   # check for max value as priority
   pick <- c()
   max_field <- max(c(meeple_check, -Inf))
   max_home <- max(c(meeple_check_home, -Inf))
-
+  
   if (max_field <= max_home) {
     all_meeples_pos <- possible_meeple_home[
       meeple_check_home > 0 &
         meeple_check_home == suppressWarnings(max(meeple_check_home))]
-
+    
     pick <- c("home" = all_meeples_pos[which.max(all_meeples_pos)])
   } else {
     all_meeples_pos <- possible_meeple[
@@ -243,7 +213,7 @@ pick_meeple <- function(field,
       pick <- c("field" = all_meeples_pos[idx])
     }
   }
-
+  
   return(pick)
 }
 
@@ -262,7 +232,7 @@ check_meeple <- function(index, roll, field, currentplayer) {
   if (target == 0) {
     target <- 40
   }
-
+  
   # check if end is available
   this_end_idx <- which(names(field) == paste0(currentplayer, "_home"))
   if ( index <= this_end_idx && index > this_end_idx - roll ) {
@@ -277,7 +247,7 @@ check_meeple <- function(index, roll, field, currentplayer) {
       # home targe is not free
       check_result <- move_order[["blocked"]]
     }
-
+    
   } else {
     # check if target is free
     if (is.na(field[target])) {
@@ -313,7 +283,7 @@ check_meeple_home <- function(index, roll, field, currentplayer) {
     } else {
       # target is blocked
       check_result <- move_order[["blocked"]]
-
+      
     }
   }
   return(check_result)
@@ -363,7 +333,7 @@ move_meeple <- function(index, roll, field, currentplayer) {
         prev_meeple <- field[target]
         field[target] <- field[index]
         field[index] <- NA_character_
-
+        
         # logs
         data.table::fwrite(
           x = list(turn,0,target,prev_meeple,field[target]),
@@ -373,7 +343,7 @@ move_meeple <- function(index, roll, field, currentplayer) {
           row.names = FALSE)
         # send meeple home
         kick_meeple(prev_meeple)
-
+        
       }
     }
   }
@@ -383,7 +353,7 @@ move_meeple <- function(index, roll, field, currentplayer) {
 move_meeple_home <- function(index, roll, field) {
   # set target
   target <- (index + roll)
-
+  
   if (is.na(field[target])) {
     field[target] <- field[index]
     field[index] <- NA_character_
@@ -393,7 +363,7 @@ move_meeple_home <- function(index, roll, field) {
 
 
 pick_and_move_meeple <- function(field, currentplayer, roll) {
-
+  
   # check home
   # this_meeple_home <- pick_meeple(field = end_area[[currentplayer]],
   #                            currentplayer = currentplayer,
@@ -401,8 +371,8 @@ pick_and_move_meeple <- function(field, currentplayer, roll) {
   #                            strategy = "home")
   # check field
   this_meeple <- pick_meeple(field, currentplayer, roll = roll)
-
-
+  
+  
   if (length(this_meeple) != 0) {
     if (names(this_meeple) == "home") {
       end_area[[currentplayer]] <- move_meeple_home(index = this_meeple,
@@ -434,127 +404,62 @@ is_winner <- function(currentplayer) {
 
 print_res <- function(list, info = "", maxspace = 20) {
   #list <- start_area;maxspace <- 10; info<-"START"
-
+  
   # max chars per meeple name times number of meeples plus spaces in between
   maxspace <- max(
     maxspace,
     nchar(empty_field) * meeples_per_player + (meeples_per_player - 1))
-
+  
   if (info != "") {
     titlespace <- floor((maxspace * players - nchar(info)) / 2)
     print(sprintf(paste0("%", titlespace, "s"), info))
   }
-
+  
   title <- paste0(sprintf(paste0("%", maxspace, "s"), names(list)), collapse = "")
   tmp <- lapply(list, paste0, collapse = " ")
   main <- paste0(sprintf(paste0("%", maxspace, "s"), tmp), collapse = "")
   print(title)
   print(main)
-
+  
   return()
 }
 
 plot_board <- function(field) {
   if (max_players == 4) {
-
+    
     # position meeples
     pos <-c(5,5,5,5,5,4,3,2,1,1,1,2,3,4,5,5,5,5,5,6,7,7,7,7,7,8,9,10,11,11,11,10,9,8,7,7,7,7,7,6)
     df_meeple <- data.frame(
       x = pos,
       y = pos[c(11:40, 1:10)])
-
+    
     df_meeple$color <- "grey90"
     start_idx <- 0:(players-1) * fields_per_players + 1
     df_meeple$color[start_idx] <- "grey60"
-
+    
     df_meeple$color[!is.na(field)] <- gsub("[[:digit:]]", "", field[!is.na(field)])
     # homes
     df_home <- data.frame(
       x = c(1,1,2,2,1,1,2,2,10,10,11,11,10,10,11,11)[1:(players*meeples_per_player)],
       y = c(1,2,2,1,10,11,11,10,10,11,11,10,1,2,2,1)[1:(players*meeples_per_player)])
-
+    
     df_home$color <- ifelse(unlist(start_area) == 0, "grey40", gsub("[[:digit:]]", "", names(unlist(start_area))))
-
+    
     # houes
     df_house <- data.frame(
       x = c(6,6,6,6,2,3,4,5,6,6,6,6,10,9,8,7)[1:(players*meeples_per_player)],
       y = c(2,3,4,5,6,6,6,6,10,9,8,7,6,6,6,6)[1:(players*meeples_per_player)])
-
+    
     df_house$color <- ifelse(is.na(unlist(end_area)), "grey70", gsub("[[:digit:]]", "", names(unlist(end_area))))
-
+    
     df <- rbind(df_meeple, df_home, df_house)
-
+    
     plot(x = df$x,
          y = df$y,
          type = "p",
          col = df$color,
          lwd = 8,
          main = paste0("Turn: ", turn))
-
-  }
-}
-# play one turn ----------------------------------------------------------
-
-init_game(players,
-          max_players,
-          players_names,
-          fields_per_players,
-          meeples_per_player)
-turn <- 0
-game_runs <- TRUE
-set.seed(1234)
-plot <- TRUE
-start_time <- Sys.time()
-while (game_runs) {
-  # logs
-  turn <- turn + 1
-  if (plot) {
-    cat("\rturn:", turn, "\n")
-  } else {
-    cat("\rturn:", turn)
-  }
-  flush.console()
-
-  # play turn
-  player_idx <- (turn %% players)
-  if (player_idx == 0) {
-    player_idx <- players
-  }
-  currentplayer <- players_names[player_idx]
-  field <- play_turn(field = field, currentplayer = currentplayer, try = 1)
-  if (plot) {
-    cat("\n")
-    tmp <- print_res(start_area, info = "START")
-    tmp <- print_res(end_area, info = "HOME")
-    # plot board
-    board <- matrix(field, nrow = max_players, byrow = TRUE)
-    board[is.na(board)] <- empty_field
-    print(board)
-    tmp <- plot_board(field)
-    Sys.sleep(0.2)
-  }
-
-
-  # check for winner
-  this_winner <- is_winner(currentplayer)
-  game_runs <- this_winner == "FALSE"
-}
-cat("\n")
-end_time <- Sys.time()
-duration <- difftime(end_time, start_time, units = "s")
-cat(c("Game ended with '", this_winner, "' winning after ", turn, " turns (took ", ceiling(duration) ,"s)\n"),
-    sep = "")
-# DONE: add kick rule
-# DONE: make pretty I
-# DONE: fix house movement
-# DONE: save dice rolls and statistics
-# DONE: make pretty II
-# TODO: no overjumping at home
-# TODO: map field for kicking
-# TODO: test strategies
-
-if (FALSE) {
-  for (i_game in 1:10) {
-    source(file = "game.R")
+    
   }
 }
