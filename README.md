@@ -1,5 +1,9 @@
 
+# gamesimulation v0.1.0
+
 This is a simulation of the game '*Mensch ärger dich nicht*'. Similar games are Ludo and Pachisi.
+
+<img src="misc/board_v0.1.0.png" width=400 align="center" />
 
 I had this idea for a while now, but never got around to do it. After a game of '*Mensch ärger dich nicht*' during the last vacation, I decided to finally code a small simulation about the game.
 
